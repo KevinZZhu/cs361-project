@@ -3,12 +3,13 @@
 # Content Generator Project
 
 import sys
+import subprocess
 import re
 import tkinter as tk
 import wikipedia
 
 
-def process_btn():
+def process_btn() -> None:
     """Event handler for when the generate button is clicked, gets the keywords from 2 entries"""
     # reset error message text
     lbl_message.config(text="")
@@ -19,22 +20,7 @@ def process_btn():
     keyword2 = ent_key2.get()
 
     # find wikipedia page for keyword1, and find first paragraph that contains both keywords
-    wiki_page = find_wiki_page(keyword1)
-    if wiki_page == "":
-        print("CG ERROR: No page found")
-        lbl_message["text"] = "ERROR: No page matching keyword 1 found."
-        return
-    paragraph = find_paragraph(wiki_page, keyword1.lower(), keyword2.lower())
-    if paragraph == "":
-        print("CG ERROR: No paragraph found")
-        lbl_message["text"] = "ERROR: No paragraph containing both keywords found."
-        return
-
-    # output keywords and paragraph to csv, and output paragraph to textbox
-    create_output_csv(keyword1, keyword2, paragraph)
-    lbl_message["text"] = "The generated paragraph has also been saved to cg_output.csv"
-    txt_output.delete("1.0", tk.END)
-    txt_output.insert("1.0", paragraph)
+    call_wiki_functions(keyword1, keyword2, gui=True)
     return
 
 
@@ -79,7 +65,7 @@ def find_paragraph(page: str, keyword1: str, keyword2: str) -> str:
     return ""
 
 
-def create_output_csv(keyword1: str, keyword2: str, paragraph: str):
+def create_output_csv(keyword1: str, keyword2: str, paragraph: str) -> None:
     """Creates an output csv file with the keywords and a paragraph that contains the keywords"""
     # create or truncate cg_output.csv file
     with open("cg_output.csv", "w", encoding="utf-8") as out_file:
@@ -88,10 +74,57 @@ def create_output_csv(keyword1: str, keyword2: str, paragraph: str):
     return
 
 
+def parse_lg_output() -> list:
+    """Parses the life generator output csv file for the first word in the item name and the item type"""
+    # read first entry (second line) from lg output file
+    with open("lg_output.csv", "r") as lg_data:
+        lg_data.readline()
+        first_toy_entry = lg_data.readline()
+
+    # return the first word of the toy name and toy type as a list
+    toy_type = first_toy_entry.rstrip(',')[0].rstrip()
+    toy_name = first_toy_entry.rstrip(',')[3].rstrip(' ')
+
+    print(f"Life generator output processed, input for content generator is {toy_name[0]} and {toy_type}")
+    return [toy_name[0], toy_type]
+
+
+def call_wiki_functions(keyword1: str, keyword2: str, gui: bool = False) -> None:
+    """Calls function to find wikipedia page and paragraph on that page, and creates the output.CSV file
+    gui variable tracks whether a GUI is being used to print error messages, default is False"""
+    # find wiki page
+    wiki_page = find_wiki_page(keyword1)
+    if wiki_page == "":
+        print("CG ERROR: No page found")
+        if gui is True:
+            lbl_message["text"] = "ERROR: No page matching keyword 1 found."
+        sys.exit(1)
+
+    # find paragraph
+    paragraph = find_paragraph(wiki_page, keyword1.lower(), keyword2.lower())
+    if paragraph == "":
+        print("CG ERROR: No paragraph found")
+        if gui is True:
+            lbl_message["text"] = "ERROR: No paragraph containing both keywords found."
+        sys.exit(1)
+
+    create_output_csv(keyword1, keyword2, paragraph)
+    print("Generated content saved to file cg_output.csv")
+
+    # print to gui if gui is used
+    if gui is True:
+        lbl_message["text"] = "The generated paragraph has also been saved to cg_output.csv"
+        txt_output.delete("1.0", tk.END)
+        txt_output.insert("1.0", paragraph)
+    return
+
+
 if __name__ == '__main__':
     if len(sys.argv) > 2:
-        raise SystemExit(f"Usage: {sys.argv[0]} [filename] \n"
-                         f"filename: (optional) name of input file")
+        raise SystemExit(f"Usage: {sys.argv[0]} [filename] [microservice]\n"
+                         f"filename: (optional) name of input file\n"
+                         f"microservice: (optional) name of other microservice to request data from, must specify "
+                         f"input file")
 
     # if no input file specified, open gui
     if len(sys.argv) == 1:
@@ -136,7 +169,7 @@ if __name__ == '__main__':
         m_screen.mainloop()
 
     # if input specified, don't open gui and instead directly output to csv file
-    else:
+    elif len(sys.argv) == 2:
         with open(sys.argv[1], "r") as in_file:
             # skip first header line of csv
             in_file.readline()
@@ -146,14 +179,19 @@ if __name__ == '__main__':
             key1 = key_line.split(';')[0].rstrip()
             key2 = key_line.split(';')[1].rstrip()
 
-            # call functions to find wiki page and function
-            page_name = find_wiki_page(key1)
-            if page_name == "":
-                print("CG ERROR: No page found")
-                sys.exit(1)
-            wiki_par = find_paragraph(page_name, key1.lower(), key2.lower())
-            if wiki_par == "":
-                print("CG ERROR: No paragraph found")
-                sys.exit(1)
-            create_output_csv(key1, key2, wiki_par)
-            print("Generated content saved to file cg_output.csv")
+            # find page and paragraph, and write paragraph to output
+            call_wiki_functions(key1, key2, gui=False)
+
+    # if 3 arguments specified
+    else:
+        # verify microservice argument name
+        other_process = ""
+        if sys.argv[2] == "lg":
+            other_process = "life-generator.py"
+        else:
+            raise SystemExit(f"Microservice not recognized")
+        subprocess.run(["python3", other_process, sys.argv[1]])
+        keywords = parse_lg_output()
+
+        # find page and paragraph, and write paragraph to output
+        call_wiki_functions(keywords[1], keywords[2], gui=False)
