@@ -88,7 +88,7 @@ def sortData(toys, toyCount, category):
         counter += 1
 
     # creates the output.csv file with the sorted data.
-    with open("output.csv", mode="w") as output_file:
+    with open("lg_output.csv", mode="w") as output_file:
         outputWriter = csv.writer(output_file, delimiter=",")
         outputWriter.writerow(["input_item_type", "input_item_category", "input_number_to_generate", "output_item_name",
                                "output_item_rating", "output_item_num_reviews"])
