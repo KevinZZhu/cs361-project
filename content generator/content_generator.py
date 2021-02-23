@@ -82,8 +82,8 @@ def parse_lg_output() -> list:
         first_toy_entry = lg_data.readline()
 
     # return the first word of the toy name and toy type as a list
-    toy_type = first_toy_entry.rstrip(',')[0].rstrip()
-    toy_name = first_toy_entry.rstrip(',')[3].rstrip(' ')
+    toy_type = first_toy_entry.split(',')[0]
+    toy_name = first_toy_entry.split(',')[3].split(' ')
 
     print(f"Life generator output processed, input for content generator is {toy_name[0]} and {toy_type}")
     return [toy_name[0], toy_type]
@@ -120,7 +120,7 @@ def call_wiki_functions(keyword1: str, keyword2: str, gui: bool = False) -> None
 
 
 if __name__ == '__main__':
-    if len(sys.argv) > 2:
+    if len(sys.argv) > 3:
         raise SystemExit(f"Usage: {sys.argv[0]} [filename] [microservice]\n"
                          f"filename: (optional) name of input file\n"
                          f"microservice: (optional) name of other microservice to request data from, must specify "
@@ -190,8 +190,8 @@ if __name__ == '__main__':
             other_process = "life-generator.py"
         else:
             raise SystemExit(f"Microservice not recognized")
-        subprocess.run(["python3", other_process, sys.argv[1]])
+        subprocess.call(["python", other_process, sys.argv[1]], shell=True)
         keywords = parse_lg_output()
 
         # find page and paragraph, and write paragraph to output
-        call_wiki_functions(keywords[1], keywords[2], gui=False)
+        call_wiki_functions(keywords[0], keywords[1], gui=False)
