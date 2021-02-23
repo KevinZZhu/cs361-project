@@ -17,24 +17,22 @@ def process_btn():
     # get keywords from entry boxes
     keyword1 = ent_key1.get()
     keyword2 = ent_key2.get()
-    # find the wikipedia page with same title as keyword 1
+
+    # find wikipedia page for keyword1, and find first paragraph that contains both keywords
     wiki_page = find_wiki_page(keyword1)
-    # display error message if no wikipedia page found
     if wiki_page == "":
-        print("ERROR: No page found")
+        print("CG ERROR: No page found")
         lbl_message["text"] = "ERROR: No page matching keyword 1 found."
         return
-    # find paragraph on that wiki page containing both keywords
     paragraph = find_paragraph(wiki_page, keyword1.lower(), keyword2.lower())
-    # display error message if no wikipedia page found
     if paragraph == "":
-        print("ERROR: No paragraph found")
+        print("CG ERROR: No paragraph found")
         lbl_message["text"] = "ERROR: No paragraph containing both keywords found."
         return
-    # output keywords and paragraph to csv
+
+    # output keywords and paragraph to csv, and output paragraph to textbox
     create_output_csv(keyword1, keyword2, paragraph)
-    lbl_message["text"] = "The generated paragraph has also been saved to output.csv"
-    # clear textbox and output paragraph to textbox
+    lbl_message["text"] = "The generated paragraph has also been saved to cg_output.csv"
     txt_output.delete("1.0", tk.END)
     txt_output.insert("1.0", paragraph)
     return
@@ -42,50 +40,49 @@ def process_btn():
 
 def find_wiki_page(keyword: str) -> str:
     """Finds and returns the first wikipedia page matching the keyword, returns empty string if page not found"""
+    # find and return first page matching keyword that is not a disambiguation page
     search_results = wikipedia.search(keyword)
-    # if search results are empty, return empty string
     if len(search_results) == 0:
         return ""
-    # return first result if available
     for result in search_results:
         try:
             wikipedia.page(search_results[0])
         except wikipedia.exceptions.DisambiguationError:
             continue
         return result
+    # if a page is not found, return empty string
     return ""
 
 
 def find_paragraph(page: str, keyword1: str, keyword2: str) -> str:
     """Finds and returns the first paragraph on the wikipedia page that contains both keywords, returns empty string if
     paragraph not found"""
-    # split content of wikipage into paragraphs by new line, store each paragraph as a separate element in list
+    # split content of wiki page into paragraphs by new line, store each paragraph as a separate element in list
     # turn auto_suggest off to get the correct page
     page_content = wikipedia.page(page, auto_suggest=False).content.split('\n')
 
-    # iterate through list of paragraphs
+    # look for keywords in the paragraph
     for paragraph in page_content:
         # variables to track if keywords were found
         k1_found = False
         k2_found = False
-        # split paragraph into list of words
         parsed_par = re.split(r'\W+', paragraph)
-        # iterate through words, check if keyword1 exists and if keyword2 exists
+        # iterate through list of words, looking for both keywords
         for word in parsed_par:
             if word.lower() == keyword1:
                 k1_found = True
             if word.lower() == keyword2:
                 k2_found = True
-            # if both keywords are found, return the paragraph
             if k1_found and k2_found:
                 return paragraph
+    # return empty string if no matching paragraph is found
     return ""
 
 
 def create_output_csv(keyword1: str, keyword2: str, paragraph: str):
-    """Creates an ouptut csv file with the keywords and a paragraph that contains the keywords"""
-    # create or truncate output.csv file
-    with open("output.csv", "w", encoding="utf-8") as out_file:
+    """Creates an output csv file with the keywords and a paragraph that contains the keywords"""
+    # create or truncate cg_output.csv file
+    with open("cg_output.csv", "w", encoding="utf-8") as out_file:
         out_file.write("input_keywords,output_content\n")
         out_file.write(f"{keyword1};{keyword2},\"{paragraph}\"")
     return
@@ -152,11 +149,11 @@ if __name__ == '__main__':
             # call functions to find wiki page and function
             page_name = find_wiki_page(key1)
             if page_name == "":
-                print("ERROR: No page found")
+                print("CG ERROR: No page found")
                 sys.exit(1)
             wiki_par = find_paragraph(page_name, key1.lower(), key2.lower())
             if wiki_par == "":
-                print("ERROR: No paragraph found")
+                print("CG ERROR: No paragraph found")
                 sys.exit(1)
             create_output_csv(key1, key2, wiki_par)
-            print("Generated content saved to file output.csv")
+            print("Generated content saved to file cg_output.csv")
