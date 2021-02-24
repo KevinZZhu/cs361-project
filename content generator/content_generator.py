@@ -190,7 +190,12 @@ if __name__ == '__main__':
             other_process = "life-generator.py"
         else:
             raise SystemExit(f"Microservice not recognized")
-        subprocess.call(["python", other_process, sys.argv[1]], shell=True)
+
+        # change subprocess syntax depending on os
+        python_syn = "python"
+        if "linux" in sys.platform:
+            python_syn = "python3"
+        subprocess.call([python_syn, other_process, sys.argv[1]])
         keywords = parse_lg_output()
 
         # find page and paragraph, and write paragraph to output
