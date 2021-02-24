@@ -85,7 +85,6 @@ def parse_lg_output() -> list:
     toy_type = first_toy_entry.split(',')[0]
     toy_name = first_toy_entry.split(',')[3].split(' ')
 
-    print(f"Life generator output processed, input for content generator is {toy_name[0]} and {toy_type}")
     return [toy_name[0], toy_type]
 
 
@@ -195,8 +194,10 @@ if __name__ == '__main__':
         python_syn = "python"
         if "linux" in sys.platform:
             python_syn = "python3"
+        print(f"Calling {other_process}")
         subprocess.call([python_syn, other_process, sys.argv[1]])
+        print(f"{other_process} finished, parsing output")
         keywords = parse_lg_output()
-
+        print(f"{other_process} output processed, input for content generator is {keywords[0]} and {keywords[1]}")
         # find page and paragraph, and write paragraph to output
         call_wiki_functions(keywords[0], keywords[1], gui=False)
